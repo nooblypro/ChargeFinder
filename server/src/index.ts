@@ -38,13 +38,15 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`\n=================================================`);
-  console.log(`⚡ ChargeSync India Aggregator Backend Running`);
-  console.log(`➜  URL: http://localhost:${PORT}`);
-  console.log(`➜  Endpoint: GET http://localhost:${PORT}/api/stops/:stopId`);
-  console.log(`➜  Cache: node-cache active (TTL 600s)`);
-  console.log(`=================================================\n`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n=================================================`);
+    console.log(`⚡ ChargeSync India Aggregator Backend Running`);
+    console.log(`➜  URL: http://localhost:${PORT}`);
+    console.log(`➜  Endpoint: GET http://localhost:${PORT}/api/stops/:stopId`);
+    console.log(`➜  Cache: node-cache active (TTL 600s)`);
+    console.log(`=================================================\n`);
+  });
+}
 
 export default app;

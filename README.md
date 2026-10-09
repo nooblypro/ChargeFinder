@@ -3,11 +3,14 @@
 
 > **Empowering EV road-trippers with transparent, multi-dimensional stopping friction predictions backed by mathematical confidence thresholds.**
 
+[![Deployment](https://img.shields.io/badge/Deployed-Vercel-black.svg?logo=vercel)](https://chargefinder-xi.vercel.app)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-cyan.svg)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8.svg)](https://tailwindcss.com/)
 [![Express](https://img.shields.io/badge/Express-4.21-lightgrey.svg)](https://expressjs.com/)
 [![Vite](https://img.shields.io/badge/Vite-8.3-646cff.svg)](https://vitejs.dev/)
+
+🔗 **Live Production Demo**: [https://chargefinder-xi.vercel.app](https://chargefinder-xi.vercel.app)
 
 ---
 
