@@ -1,0 +1,45 @@
+{
+  "source": "offline_fallback",
+  "boundary": "IN-TN",
+  "fetched_at": "2026-10-04T00:00:00Z",
+  "coverage_note": "Synthetic fallback sample; not a complete Tamil Nadu directory.",
+  "location_verified": false,
+  "stations": [
+    {
+      "id": "fallback_zeon_coimbatore",
+      "name": "Zeon Charging Hub — Coimbatore sample",
+      "lat": 11.0168,
+      "lon": 76.9558,
+      "operator": "Zeon",
+      "source": "offline_fallback",
+      "location_verified": false
+    },
+    {
+      "id": "fallback_tata_chennai",
+      "name": "Tata Power EZ Charge — Chennai sample",
+      "lat": 13.0827,
+      "lon": 80.2707,
+      "operator": "Tata Power",
+      "source": "offline_fallback",
+      "location_verified": false
+    },
+    {
+      "id": "fallback_chargezone_madurai",
+      "name": "ChargeZone EV Hub — Madurai sample",
+      "lat": 9.9252,
+      "lon": 78.1198,
+      "operator": "ChargeZone",
+      "source": "offline_fallback",
+      "location_verified": false
+    },
+    {
+      "id": "fallback_relux_salem",
+      "name": "Relux EV Charging Station — Salem sample",
+      "lat": 11.6643,
+      "lon": 78.1460,
+      "operator": "Relux",
+      "source": "offline_fallback",
+      "location_verified": false
+    }
+  ]
+}
