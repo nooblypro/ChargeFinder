@@ -39,6 +39,8 @@ export interface DirectoryInfo {
 export interface HubFixture {
   id: string;
   name: string;
+  lat?: number;
+  lon?: number;
   location?: string;
   distanceKm?: number;
   operator?: string;

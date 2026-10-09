@@ -5,9 +5,7 @@ import { Header } from './components/Header';
 import { FormulaModal } from './components/FormulaModal';
 import { ExpresswayMap } from './components/ExpresswayMap';
 import { StatewideMap } from './components/StatewideMap';
-import { HubCard } from './components/HubCard';
 import { EvidenceDrawer } from './components/EvidenceDrawer';
-import { HubCardSkeleton } from './components/SkeletonLoader';
 
 export function App() {
   const [fixtures, setFixtures] = useState<HubFixture[]>(HUB_FIXTURES);
@@ -15,13 +13,11 @@ export function App() {
   const [selectedFixture, setSelectedFixture] = useState<HubFixture | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [isFormulaOpen, setIsFormulaOpen] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentSteppingIndex, setCurrentSteppingIndex] = useState<number>(0);
 
   // Auto-fetch backend api on boot for pre-assessed hubs
   useEffect(() => {
     async function loadBackendStops() {
-      setIsLoading(true);
       try {
         const res = await fetch('/api/stops');
         if (res.ok) {
@@ -45,8 +41,6 @@ export function App() {
         }
       } catch {
         // Quiet fallback to local benchmark fixtures
-      } finally {
-        setIsLoading(false);
       }
     }
     loadBackendStops();
@@ -196,35 +190,14 @@ export function App() {
           weights={weights}
         />
 
-        {/* Section Header */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Charging Stop Recommendations
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Real-time friction advisor for EV stops along the Bengaluru–Mysuru Expressway
-            </p>
-          </div>
-        </div>
-
-        {/* Mapped Recommendation Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-          {isLoading
-            ? [1, 2, 3, 4].map((i) => <HubCardSkeleton key={i} />)
-            : fixtures.map((fixture) => (
-                <HubCard
-                  key={fixture.id}
-                  fixture={fixture}
-                  weights={weights}
-                  onInspectEvidence={handleInspectEvidence}
-                  isSelected={selectedFixture?.id === fixture.id && isDrawerOpen}
-                />
-              ))}
-        </div>
-
-        {/* On-Demand Statewide Directory & Ambiguity-Guarded Map */}
-        <StatewideMap onInspectStation={handleInspectStatewideStation} />
+        {/* Expanded Primary Hero Map with Corridor Focus & Statewide Directory */}
+        <StatewideMap
+          weights={weights}
+          corridorFixtures={fixtures}
+          selectedHubId={selectedFixture?.id || null}
+          onInspectStation={handleInspectStatewideStation}
+          onInspectCorridorHub={handleInspectEvidence}
+        />
 
       </main>
 

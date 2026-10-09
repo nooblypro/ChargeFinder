@@ -13,6 +13,8 @@ export const HUB_FIXTURES: HubFixture[] = [
   {
     id: "stop_a",
     name: "Srirangapatna Hub",
+    lat: 12.4223,
+    lon: 76.6837,
     location: "NH 275, Km 104 • Near Srirangapatna Bypass",
     distanceKm: 104,
     operator: "Zeon & KSEB Network",
@@ -39,6 +41,8 @@ export const HUB_FIXTURES: HubFixture[] = [
   {
     id: "stop_d",
     name: "Maddur Rest Hub",
+    lat: 12.5833,
+    lon: 77.0500,
     location: "NH 275, Km 78 • Maddur Bypass",
     distanceKm: 78,
     operator: "Statiq / Plaza Partners",
@@ -56,6 +60,8 @@ export const HUB_FIXTURES: HubFixture[] = [
   {
     id: "stop_b",
     name: "Channapatna Plaza Hub",
+    lat: 12.6518,
+    lon: 77.2089,
     location: "NH 275, Km 56 • Toy Town Food Plaza",
     distanceKm: 56,
     operator: "Tata Power EZ Charge",
@@ -82,6 +88,8 @@ export const HUB_FIXTURES: HubFixture[] = [
   {
     id: "stop_c",
     name: "Ramanagara Fuel-Station Hub",
+    lat: 12.7150,
+    lon: 77.2810,
     location: "NH 275, Km 42 • Ramanagara Bypass Station",
     distanceKm: 42,
     operator: "Jio-bp pulse",
