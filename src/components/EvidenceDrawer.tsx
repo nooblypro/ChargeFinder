@@ -110,17 +110,17 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
             className="relative w-full max-w-xl bg-[#090d16] border-l border-slate-800 shadow-2xl h-full flex flex-col z-10 overflow-y-auto"
           >
             {/* Minimal Header */}
-            <div className="sticky top-0 z-20 bg-[#090d16]/90 backdrop-blur-md border-b border-slate-800/80 p-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">
+            <div className="sticky top-0 z-20 bg-[#090d16]/90 backdrop-blur-md border-b border-slate-800/80 p-3.5 sm:p-5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-xl font-bold text-white tracking-tight truncate">
                   {fixture.name}
                 </h2>
-                <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5 font-sans">
-                  <span>{fixture.operator}</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-slate-400 mt-0.5 font-sans">
+                  <span className="font-semibold text-cyan-400 truncate">{fixture.operator}</span>
                   {fixture.location && (
                     <>
                       <span>•</span>
-                      <span className="truncate max-w-[200px]">{fixture.location}</span>
+                      <span className="truncate max-w-[160px] sm:max-w-[240px]">{fixture.location}</span>
                     </>
                   )}
                 </div>
@@ -128,14 +128,14 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
 
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer border border-slate-800"
+                className="p-1.5 sm:p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer border border-slate-800 flex-shrink-0"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
             {/* Main Content Body */}
-            <div className="p-6 space-y-6 flex-1">
+            <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex-1">
 
               {/* Assessment Card View */}
               {isAssessing ? (

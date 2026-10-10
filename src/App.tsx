@@ -207,7 +207,7 @@ export function App() {
       />
 
       {/* Main Full-Width Map Experience */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 pb-12">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-4 lg:px-6 pb-6 sm:pb-12">
         <StationFinderMap
           weights={weights}
           onSelectStation={handleSelectStation}
