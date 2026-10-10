@@ -7,6 +7,8 @@ import { directoryRouter } from './routes/directory.js';
 import { frictionRouter } from './routes/friction.js';
 
 dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
 
 const app = express();
