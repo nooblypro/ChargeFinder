@@ -2,19 +2,17 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
-  ShieldCheck, 
   ShieldAlert, 
   Building2, 
   Wrench, 
   TrendingUp, 
   Radio, 
-  Calculator, 
   Plug,
   CreditCard,
   Zap,
   Sparkles,
   RefreshCw,
-  Clock,
+  Calculator,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
@@ -40,7 +38,6 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
   currentSteppingIndex = 0,
 }) => {
   const [showTechnicalDetails, setShowTechnicalDetails] = useState<boolean>(false);
-  const [showCsdsExplanation, setShowCsdsExplanation] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'signals' | 'math' | 'raw'>('signals');
 
   if (!fixture) return null;
@@ -52,26 +49,23 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
   const csdsRaw = scoreResult?.csdsRaw ?? 0;
   const ecsScore = scoreResult?.ecsScore ?? 0;
   const isSuppressed = scoreResult?.isSuppressed ?? true;
-  const displayCSDS = scoreResult?.displayCSDS ?? 'N/A';
   const breakdown = scoreResult?.breakdown ?? [];
+
+  const fullnessPercent = Math.max(5, Math.min(95, Math.round(100 - csdsRaw)));
 
   let recommendationLabel = 'Verify First';
   let recommendationColor = 'text-amber-400 bg-amber-950/40 border-amber-800/40';
-  let csdsSubtitle = 'Data coverage is below 55% threshold; score is suppressed for safety.';
 
   if (!isSuppressed) {
-    if (csdsRaw >= 75) {
-      recommendationLabel = 'Recommended';
+    if (fullnessPercent < 40) {
+      recommendationLabel = 'Available';
       recommendationColor = 'text-emerald-400 bg-emerald-950/40 border-emerald-800/40';
-      csdsSubtitle = `High station dependability (${csdsRaw.toFixed(0)}%). Low queue risk & reliable hardware predicted.`;
-    } else if (csdsRaw >= 50) {
-      recommendationLabel = 'Caution';
+    } else if (fullnessPercent < 70) {
+      recommendationLabel = 'Moderate';
       recommendationColor = 'text-amber-400 bg-amber-950/40 border-amber-800/40';
-      csdsSubtitle = `Moderate friction (${csdsRaw.toFixed(0)}%). Expect potential wait times or minor review warnings.`;
     } else {
-      recommendationLabel = 'Avoid / Verify First';
+      recommendationLabel = 'Likely Full';
       recommendationColor = 'text-rose-400 bg-rose-950/40 border-rose-800/40';
-      csdsSubtitle = `High friction risk (${csdsRaw.toFixed(0)}%). Hardware issues or heavy congestion detected.`;
     }
   }
 
@@ -165,107 +159,68 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                 </div>
               ) : (
                 <>
-                  {/* Hero Score Box */}
-                  <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/80 relative overflow-hidden">
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-                            Real-Time Availability Score
-                          </span>
-                          <button
-                            onClick={() => setShowCsdsExplanation(!showCsdsExplanation)}
-                            className="p-0.5 rounded text-slate-400 hover:text-cyan-300 transition cursor-pointer"
-                            title="What is this score?"
-                          >
-                            <Calculator className="w-3 h-3 text-cyan-400" />
-                          </button>
-                        </div>
-                        <div className="text-4xl font-extrabold text-white tracking-tight font-mono">
-                          {displayCSDS}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-2">
+                  {/* Minimalist Score Box */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800/80 space-y-4">
+                    
+                    {/* Header Status & Re-assess */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold border ${recommendationColor}`}>
                           {recommendationLabel}
                         </span>
-                        <button
-                          onClick={() => onTriggerAssessment && onTriggerAssessment(fixture.id)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 transition cursor-pointer"
-                        >
-                          <RefreshCw className="w-3 h-3 text-cyan-400" />
-                          <span>Re-assess</span>
-                        </button>
+                        <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+                          {fullnessPercent >= 70 ? 'Queue Expected' : fullnessPercent >= 40 ? 'Moderate Stalls' : 'Bays Available'}
+                        </span>
                       </div>
+
+                      <button
+                        onClick={() => onTriggerAssessment && onTriggerAssessment(fixture.id)}
+                        className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Re-assess</span>
+                      </button>
                     </div>
 
-                    {/* Dual Fullness & Confidence Metrics Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                    {/* 2 Core Direct Metrics */}
+                    <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
+                      
+                      {/* Metric 1: Fullness % */}
                       <div>
-                        <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Fullness Probability</div>
-                        <div className={`text-2xl font-black font-mono ${Math.round(100 - csdsRaw) >= 70 ? 'text-rose-400' : Math.round(100 - csdsRaw) >= 40 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                          {isSuppressed ? 'Pending' : `${Math.max(5, Math.min(95, Math.round(100 - csdsRaw)))}%`}
+                        <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">
+                          Fullness Risk
                         </div>
-                        <div className="text-[10px] text-slate-400 font-medium">
-                          {isSuppressed ? 'Low sensor confidence' : Math.round(100 - csdsRaw) >= 70 ? 'Likely Full (Queue)' : Math.round(100 - csdsRaw) >= 40 ? 'Moderate Queue' : 'Bays Open (Free)'}
+                        <div className={`text-3xl sm:text-4xl font-black font-mono mt-1 ${
+                          fullnessPercent >= 70 ? 'text-rose-400' : fullnessPercent >= 40 ? 'text-amber-400' : 'text-emerald-400'
+                        }`}>
+                          {isSuppressed ? 'Pending' : `${fullnessPercent}%`}
                         </div>
+                        <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                          Chance that charging bays are currently occupied.
+                        </p>
                       </div>
+
+                      {/* Metric 2: Confidence % */}
                       <div>
-                        <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Prediction Confidence</div>
-                        <div className="text-2xl font-black font-mono text-cyan-300">
+                        <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">
+                          Confidence
+                        </div>
+                        <div className="text-3xl sm:text-4xl font-black font-mono mt-1 text-cyan-300">
                           {ecsScore.toFixed(0)}%
                         </div>
-                        <div className="text-[10px] text-slate-400 font-medium">
-                          {isSuppressed ? 'Below 50% Threshold' : 'Verified Multi-Signal'}
-                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                          Confidence in this prediction based on real reviews &amp; data.
+                        </p>
                       </div>
+
                     </div>
 
-                    {/* Explanatory subtitle */}
-                    <p className="text-xs text-slate-300 mb-3 font-medium">
-                      {csdsSubtitle}
-                    </p>
-
-                    {/* Inline CSDS Explainer Panel */}
-                    <AnimatePresence>
-                      {showCsdsExplanation && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mb-3 p-3.5 rounded-xl bg-slate-950 border border-cyan-500/40 text-xs text-slate-300 space-y-2 overflow-hidden"
-                        >
-                          <div className="font-bold text-cyan-300 flex items-center justify-between">
-                            <span>What is CSDS (Charging Stop Desirability Score)?</span>
-                            <button
-                              onClick={() => setShowCsdsExplanation(false)}
-                              className="text-slate-400 hover:text-white"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <p className="text-[11px] text-slate-300 leading-relaxed">
-                            CSDS is a <strong>0–100% composite reliability index</strong> measuring expected stop quality before you arrive. Higher scores indicate working chargers, short wait times, and verified location data.
-                          </p>
-                          <div className="grid grid-cols-3 gap-1.5 text-[10px] font-mono text-center pt-1 border-t border-slate-800">
-                            <span className="p-1 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/40">75–100%: High Quality</span>
-                            <span className="p-1 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40">50–74%: Caution</span>
-                            <span className="p-1 rounded bg-rose-950/60 text-rose-300 border border-rose-800/40">&lt;50%: High Risk</span>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    <div className="flex items-center gap-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400">
-                      <div className="flex items-center gap-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                        <span>Confidence: <strong className="text-slate-200">{ecsScore >= 75 ? 'High' : ecsScore >= 55 ? 'Medium' : 'Low (Suppressed)'} ({ecsScore.toFixed(0)}%)</strong></span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Freshness: <strong className="text-slate-200">{fixture.freshness || 'Just now'}</strong></span>
-                      </div>
+                    {/* Minimal Freshness Footer */}
+                    <div className="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-800/60 font-mono">
+                      <span>Last Updated:</span>
+                      <span className="text-slate-200 font-semibold truncate max-w-[220px] sm:max-w-none">
+                        {fixture.freshness || 'Live Sync'}
+                      </span>
                     </div>
 
                     {isSuppressed && (
