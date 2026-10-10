@@ -3,47 +3,55 @@ import { Zap, BookOpen } from 'lucide-react';
 
 interface HeaderProps {
   onOpenFormula?: () => void;
+  stationCount?: number;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenFormula }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenFormula, stationCount = 0 }) => {
   return (
     <header className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3.5 mb-6">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
-        {/* Brand & Route Context */}
+        {/* Brand & Context */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-lg shadow-emerald-950/40">
             <Zap className="w-5 h-5 text-emerald-400 fill-emerald-400/20" />
           </div>
 
           <div>
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
-              ChargeSync <span className="text-emerald-400">India</span>
+            <h1 className="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
+              ChargeFinder <span className="text-emerald-400">India</span>
             </h1>
-            <p className="text-xs text-slate-400">
-              Bengaluru–Mysuru Expressway (NH-275) Friction Advisor
+            <p className="text-xs text-slate-400 font-medium">
+              Real-Time EV Station Finder &amp; Fullness Confidence Engine
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-3">
+          {stationCount > 0 && (
+            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-xs font-mono text-emerald-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>{stationCount} Stations Online</span>
+            </div>
+          )}
+
           {onOpenFormula && (
             <button
               onClick={onOpenFormula}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 hover:border-cyan-500/40 text-xs font-medium text-slate-200 hover:text-cyan-300 transition cursor-pointer"
-              title="View mathematical scoring specification and suppression logic"
+              title="View how fullness probability and confidence scores are calculated"
             >
               <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">Scoring Methodology</span>
-              <span className="sm:hidden">Math</span>
+              <span className="hidden sm:inline">Fullness Formula</span>
+              <span className="sm:hidden">Formula</span>
             </button>
           )}
 
-          {/* Minimal Live Status Dot */}
+          {/* Live Status Dot */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-xs text-slate-300">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="font-medium text-slate-300">Live Monitoring</span>
+            <span className="font-medium text-slate-300">Live AI Sync</span>
           </div>
         </div>
 

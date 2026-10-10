@@ -167,16 +167,16 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                 <>
                   {/* Hero Score Box */}
                   <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800/80 relative overflow-hidden">
-                    <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">
-                            Dependability Score (CSDS)
+                            Real-Time Availability Score
                           </span>
                           <button
                             onClick={() => setShowCsdsExplanation(!showCsdsExplanation)}
                             className="p-0.5 rounded text-slate-400 hover:text-cyan-300 transition cursor-pointer"
-                            title="What is CSDS?"
+                            title="What is this score?"
                           >
                             <Calculator className="w-3 h-3 text-cyan-400" />
                           </button>
@@ -200,7 +200,29 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                       </div>
                     </div>
 
-                    {/* Explanatory subtitle for what the CSDS value means */}
+                    {/* Dual Fullness & Confidence Metrics Grid */}
+                    <div className="grid grid-cols-2 gap-3 mb-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+                      <div>
+                        <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Fullness Probability</div>
+                        <div className={`text-2xl font-black font-mono ${Math.round(100 - csdsRaw) >= 70 ? 'text-rose-400' : Math.round(100 - csdsRaw) >= 40 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          {isSuppressed ? 'Pending' : `${Math.max(5, Math.min(95, Math.round(100 - csdsRaw)))}%`}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-medium">
+                          {isSuppressed ? 'Low sensor confidence' : Math.round(100 - csdsRaw) >= 70 ? 'Likely Full (Queue)' : Math.round(100 - csdsRaw) >= 40 ? 'Moderate Queue' : 'Bays Open (Free)'}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Prediction Confidence</div>
+                        <div className="text-2xl font-black font-mono text-cyan-300">
+                          {ecsScore.toFixed(0)}%
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-medium">
+                          {isSuppressed ? 'Below 50% Threshold' : 'Verified Multi-Signal'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Explanatory subtitle */}
                     <p className="text-xs text-slate-300 mb-3 font-medium">
                       {csdsSubtitle}
                     </p>
