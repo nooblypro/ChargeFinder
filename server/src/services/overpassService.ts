@@ -9,10 +9,11 @@ export interface StationRecord {
   lat: number;
   lon: number;
   operator: string;
-  source: 'openstreetmap_overpass' | 'offline_fallback';
+  source: 'openstreetmap_overpass' | 'offline_fallback' | 'user_requested' | 'on_demand';
   directory_record_verified: boolean;
   operational_status: 'unknown' | 'operational' | 'outage';
   address?: string;
+  city?: string;
   capacity?: string;
 }
 
