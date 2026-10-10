@@ -9,7 +9,6 @@ import {
   Filter, 
   Compass, 
   ArrowRight, 
-  Gauge, 
   MapPin,
   RefreshCw,
   Maximize2,
@@ -23,6 +22,7 @@ interface StationFinderMapProps {
   weights?: SignalWeightConfig;
   onSelectStation: (station: EVStation | HubFixture) => void;
   onStationCountChange?: (count: number) => void;
+  latestUpdatedStation?: Partial<EVStation> | null;
 }
 
 // Controller to smoothly animate map camera and handle responsive resize
@@ -79,35 +79,36 @@ function MapViewController({
 
 // Create custom pin icon based on Fullness Percentage
 const createFullnessMarkerIcon = (fullness: number, isSelected = false) => {
-  let color = 'bg-emerald-500 shadow-emerald-500/50';
-  let ring = 'ring-emerald-400';
+  let color = 'bg-emerald-500 text-slate-950 shadow-emerald-500/40';
+  let ring = 'ring-emerald-400/80';
   let text = `${fullness}%`;
 
   if (fullness >= 70) {
-    color = 'bg-rose-500 shadow-rose-500/50';
-    ring = 'ring-rose-400';
+    color = 'bg-rose-500 text-white shadow-rose-500/40';
+    ring = 'ring-rose-400/80';
   } else if (fullness >= 40) {
-    color = 'bg-amber-500 shadow-amber-500/50';
-    ring = 'ring-amber-400';
+    color = 'bg-amber-400 text-slate-950 shadow-amber-400/40';
+    ring = 'ring-amber-300/80';
   }
 
   const selectedBorder = isSelected 
-    ? 'ring-4 ring-cyan-300 scale-125 z-50' 
+    ? 'ring-4 ring-cyan-300 scale-125 z-50 animate-pulse' 
     : `ring-2 ${ring} hover:scale-110`;
 
   return L.divIcon({
     className: 'custom-fullness-marker',
     html: `
-      <div class="relative flex flex-col items-center group cursor-pointer">
-        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full ${color} border-2 border-slate-950 shadow-2xl flex flex-col items-center justify-center text-slate-950 font-black transition-transform ${selectedBorder}">
-          <span class="text-[9px] sm:text-[10px] leading-tight font-extrabold tracking-tighter">${text}</span>
-          <span class="text-[6px] sm:text-[7px] leading-none uppercase font-bold opacity-80">Full</span>
+      <div class="relative flex flex-col items-center group cursor-pointer transition-transform duration-200">
+        <div class="w-10 h-10 rounded-full ${color} border-2 border-slate-950 shadow-2xl flex flex-col items-center justify-center font-black transition-transform ${selectedBorder}">
+          <span class="text-[10px] leading-tight font-extrabold tracking-tight">${text}</span>
+          <span class="text-[6.5px] leading-none uppercase font-bold opacity-80">Full</span>
         </div>
-        <div class="w-1.5 h-1.5 bg-slate-950 rotate-45 -mt-0.5"></div>
+        <div class="w-2 h-2 bg-slate-950 rotate-45 -mt-1 shadow-sm"></div>
       </div>
     `,
-    iconSize: [40, 44],
-    iconAnchor: [20, 22],
+    iconSize: [40, 46],
+    iconAnchor: [20, 23],
+    popupAnchor: [0, -22],
   });
 };
 
@@ -151,6 +152,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
   weights: _weights,
   onSelectStation,
   onStationCountChange,
+  latestUpdatedStation,
 }) => {
   const [allStations, setAllStations] = useState<EVStation[]>(EV_STATIONS_DATA);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
@@ -165,6 +167,34 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
   });
   const [isSyncingLive, setIsSyncingLive] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync reassessed live station data from SerpApi directly onto the map
+  useEffect(() => {
+    if (latestUpdatedStation && latestUpdatedStation.id) {
+      setAllStations((prev) =>
+        prev.map((s) => {
+          if (s.id === latestUpdatedStation.id) {
+            const updatedFullness = latestUpdatedStation.fullnessPercentage ?? s.fullnessPercentage;
+            const updatedConfidence = latestUpdatedStation.confidencePercentage ?? s.confidencePercentage;
+            const updatedWait = latestUpdatedStation.estimatedWaitMinutes ?? s.estimatedWaitMinutes;
+            const updatedStatus = latestUpdatedStation.status ?? (updatedFullness >= 70 ? 'LIKELY_FULL' : updatedFullness >= 40 ? 'MODERATE' : 'AVAILABLE');
+
+            return {
+              ...s,
+              ...latestUpdatedStation,
+              fullnessPercentage: updatedFullness,
+              confidencePercentage: updatedConfidence,
+              status: updatedStatus,
+              estimatedWaitMinutes: updatedWait,
+              availableStallsEstimated: Math.max(0, Math.round((1 - updatedFullness / 100) * s.totalStalls)),
+              lastUpdated: latestUpdatedStation.lastUpdated || 'Just updated via SerpApi',
+            };
+          }
+          return s;
+        })
+      );
+    }
+  }, [latestUpdatedStation]);
 
   // Auto-fetch additional live stations from Overpass API backend and merge
   useEffect(() => {
@@ -473,83 +503,108 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
 
             return (
               <Marker
-                key={station.id}
+                key={`${station.id}-${station.fullnessPercentage}-${station.lastUpdated || ''}`}
                 position={[station.lat, station.lon]}
                 icon={createFullnessMarkerIcon(station.fullnessPercentage, isSelected)}
               >
-                <Popup className="custom-leaflet-popup" maxWidth={320} minWidth={240}>
-                  <div className="p-3.5 sm:p-4 bg-slate-950 text-slate-100 rounded-2xl border border-blue-900/40 max-w-[280px] sm:max-w-sm space-y-2.5 sm:space-y-3 font-sans shadow-2xl">
+                <Popup className="custom-leaflet-popup" maxWidth={360} minWidth={290}>
+                  <div className="p-3.5 sm:p-4 bg-[#090d19] text-slate-100 rounded-2xl border border-slate-800/90 shadow-2xl space-y-3 font-sans w-[285px] sm:w-[325px]">
                     
                     {/* Header Badges */}
-                    <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-500/10 text-cyan-400 border border-blue-500/30 truncate max-w-[140px]">
-                        {station.operator}
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+                      <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg bg-cyan-950/70 text-cyan-400 border border-cyan-800/60 truncate max-w-[170px] flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-cyan-400 shrink-0" />
+                        <span className="truncate">{station.operator}</span>
                       </span>
-                      <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1 flex-shrink-0">
-                        <MapPin className="w-3 h-3 text-slate-400" />
+                      <span className="text-[10px] sm:text-[11px] font-mono text-slate-400 flex items-center gap-1 shrink-0">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500" />
                         <span>{station.city}</span>
                       </span>
                     </div>
 
                     {/* Station Name & Specs */}
-                    <div>
-                      <h4 className="font-bold text-xs sm:text-sm text-white tracking-tight leading-snug">
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-xs sm:text-sm text-white tracking-tight leading-snug line-clamp-2">
                         {station.name}
                       </h4>
-                      <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 line-clamp-2">{station.address}</p>
+                      <p className="text-[10px] sm:text-[11px] text-slate-400 line-clamp-1">
+                        {station.address}
+                      </p>
                       
-                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                        <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-900 text-cyan-300 border border-slate-800">
-                          ⚡ {station.fastChargers}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-slate-900 text-cyan-300 border border-slate-800 flex items-center gap-1">
+                          <span>⚡</span>
+                          <span className="truncate max-w-[170px]">{station.fastChargers}</span>
                         </span>
-                        <span className="text-[10px] font-mono text-slate-400">
+                        <span className="text-[10px] font-mono text-slate-400 bg-slate-900/60 px-2 py-0.5 rounded-md border border-slate-800">
                           {station.totalStalls} Stalls
                         </span>
                       </div>
                     </div>
 
-                    {/* Fullness & Confidence Metrics Banner */}
-                    <div className={`p-2.5 sm:p-3 rounded-xl border space-y-1.5 sm:space-y-2 ${
+                    {/* Fullness & Status Banner (Clean 2-Column Grid, Zero Awkward Wrapping) */}
+                    <div className={`p-2.5 sm:p-3 rounded-xl border space-y-2 ${
                       station.fullnessPercentage >= 70
-                        ? 'bg-rose-950/40 border-rose-800/50 text-rose-200'
+                        ? 'bg-rose-950/30 border-rose-800/50'
                         : station.fullnessPercentage >= 40
-                        ? 'bg-amber-950/40 border-amber-800/50 text-amber-200'
-                        : 'bg-emerald-950/40 border-emerald-800/50 text-emerald-200'
+                        ? 'bg-amber-950/30 border-amber-800/50'
+                        : 'bg-emerald-950/30 border-emerald-800/50'
                     }`}>
-                      <div className="flex items-center justify-between font-bold text-[11px] sm:text-xs">
-                        <div className="flex items-center gap-1">
-                          <Gauge className="w-3.5 h-3.5" />
-                          <span>Fullness Risk:</span>
+                      {/* Top row: Status Tag & Big Fullness Number */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full animate-pulse ${
+                            station.fullnessPercentage >= 70
+                              ? 'bg-rose-400'
+                              : station.fullnessPercentage >= 40
+                              ? 'bg-amber-400'
+                              : 'bg-emerald-400'
+                          }`} />
+                          <span className={`text-[11px] sm:text-xs font-bold ${
+                            station.fullnessPercentage >= 70
+                              ? 'text-rose-300'
+                              : station.fullnessPercentage >= 40
+                              ? 'text-amber-300'
+                              : 'text-emerald-300'
+                          }`}>
+                            {station.fullnessPercentage >= 70
+                              ? 'Likely Busy'
+                              : station.fullnessPercentage >= 40
+                              ? 'Moderate'
+                              : 'Available'}
+                          </span>
                         </div>
-                        <span className="font-mono text-xs sm:text-sm text-white">
+                        <span className="font-mono text-xs sm:text-sm font-black text-white">
                           {station.fullnessPercentage}% Full
                         </span>
                       </div>
 
-                      {/* Progress Bar */}
-                      <div className="w-full h-1.5 sm:h-2 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
+                      {/* Smooth Progress Bar */}
+                      <div className="w-full h-1.5 rounded-full bg-slate-900/80 overflow-hidden border border-slate-800/80">
                         <div
-                          className={`h-full transition-all duration-500 ${
+                          className={`h-full transition-all duration-500 rounded-full ${
                             station.fullnessPercentage >= 70
-                              ? 'bg-rose-500'
+                              ? 'bg-gradient-to-r from-rose-500 to-red-400'
                               : station.fullnessPercentage >= 40
-                              ? 'bg-amber-400'
-                              : 'bg-emerald-400'
+                              ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
+                              : 'bg-gradient-to-r from-emerald-500 to-teal-400'
                           }`}
                           style={{ width: `${station.fullnessPercentage}%` }}
                         />
                       </div>
 
-                      <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono pt-0.5 text-slate-300">
-                        <span>Prediction Confidence:</span>
-                        <span className="font-bold text-white">{station.confidencePercentage}%</span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-slate-400">
-                        <span>Estimated Queue:</span>
-                        <span className="font-bold text-white">
-                          {station.estimatedWaitMinutes > 0 ? `~${station.estimatedWaitMinutes}m` : 'No wait'}
-                        </span>
+                      {/* 2-Column Key Metrics Grid */}
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/50 font-mono">
+                        <div className="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800/50">
+                          <div className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Confidence</div>
+                          <div className="text-white font-bold text-[11px] sm:text-xs mt-0.5">{station.confidencePercentage}% Verified</div>
+                        </div>
+                        <div className="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800/50">
+                          <div className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Est. Queue</div>
+                          <div className="text-white font-bold text-[11px] sm:text-xs mt-0.5">
+                            {station.estimatedWaitMinutes > 0 ? `~${station.estimatedWaitMinutes} mins` : 'No wait'}
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -559,11 +614,11 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
                         setSelectedStationId(station.id);
                         onSelectStation(station);
                       }}
-                      className="w-full py-2 sm:py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-lg transition cursor-pointer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:scale-[0.98] text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-950/40 transition cursor-pointer"
                     >
-                      <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <Sparkles className="w-3.5 h-3.5 text-slate-950" />
                       <span>Inspect Telemetry</span>
-                      <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-950" />
                     </button>
 
                   </div>
