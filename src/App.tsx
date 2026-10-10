@@ -77,6 +77,7 @@ export function App() {
   const handleTriggerAssessment = (_hubId?: string) => {
     if (!selectedFixture) return;
 
+    setSelectedFixture((prev) => prev ? { ...prev, assessmentStatus: 'assessing' } : null);
     setCurrentSteppingIndex(0);
     let step = 0;
     const interval = setInterval(() => {
@@ -85,8 +86,17 @@ export function App() {
         setCurrentSteppingIndex(step);
       } else {
         clearInterval(interval);
+        setSelectedFixture((prev) => 
+          prev 
+            ? { 
+                ...prev, 
+                assessmentStatus: 'assessed', 
+                freshness: 'Just now (Live re-assessment)' 
+              } 
+            : null
+        );
       }
-    }, 500);
+    }, 450);
   };
 
   return (
