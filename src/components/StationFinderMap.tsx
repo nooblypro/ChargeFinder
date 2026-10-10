@@ -25,7 +25,7 @@ interface StationFinderMapProps {
   onStationCountChange?: (count: number) => void;
 }
 
-// Controller to smoothly animate map camera to coordinates or fit bounds
+// Controller to smoothly animate map camera and handle responsive resize
 function MapViewController({ 
   center, 
   zoom, 
@@ -38,10 +38,39 @@ function MapViewController({
   const map = useMap();
 
   useEffect(() => {
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+
+    map.invalidateSize();
+    const t1 = setTimeout(() => {
+      map.invalidateSize();
+      if (fitBounds) {
+        map.fitBounds(fitBounds, { padding: [30, 30], maxZoom: 12, animate: false });
+      }
+    }, 200);
+
+    const t2 = setTimeout(() => map.invalidateSize(), 700);
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [map, fitBounds]);
+
+  useEffect(() => {
+    map.invalidateSize();
     if (fitBounds) {
-      map.fitBounds(fitBounds, { padding: [30, 30], maxZoom: 13, duration: 1.2 });
+      map.fitBounds(fitBounds, { 
+        padding: [30, 30], 
+        maxZoom: 13, 
+        animate: true, 
+        duration: 0.8 
+      });
     } else {
-      map.flyTo(center, zoom, { duration: 1.2 });
+      map.flyTo(center, zoom, { duration: 1.0 });
     }
   }, [center, zoom, fitBounds, map]);
 
@@ -83,12 +112,12 @@ const createFullnessMarkerIcon = (fullness: number, isSelected = false) => {
 };
 
 const INDIA_BOUNDS: [[number, number], [number, number]] = [
-  [6.5, 68.0],
+  [6.0, 68.0],
   [36.0, 97.5]
 ];
 
 const CITY_PRESETS = [
-  { label: 'All India', center: [21.5, 78.9] as [number, number], zoom: 5 },
+  { label: 'All India', center: [19.0, 78.5] as [number, number], zoom: 5, isAll: true },
   { label: 'Bengaluru', center: [12.9716, 77.6412] as [number, number], zoom: 12 },
   { label: 'Chennai', center: [13.0587, 80.2461] as [number, number], zoom: 12 },
   { label: 'Mumbai', center: [19.0760, 72.8777] as [number, number], zoom: 12 },
@@ -97,6 +126,26 @@ const CITY_PRESETS = [
   { label: 'Pune', center: [18.5500, 73.8500] as [number, number], zoom: 12 },
   { label: 'Coimbatore', center: [11.0168, 76.9558] as [number, number], zoom: 12 },
 ];
+
+function getBoundsForStations(stations: EVStation[]): L.LatLngBoundsExpression {
+  if (!stations || stations.length === 0) {
+    return [
+      [8.5, 72.0],
+      [28.8, 81.0]
+    ];
+  }
+  const lats = stations.map((s) => s.lat);
+  const lons = stations.map((s) => s.lon);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLon = Math.min(...lons);
+  const maxLon = Math.max(...lons);
+
+  return [
+    [Math.max(6.0, minLat - 0.6), Math.max(68.0, minLon - 0.6)],
+    [Math.min(36.0, maxLat + 0.6), Math.min(97.0, maxLon + 0.6)],
+  ];
+}
 
 export const StationFinderMap: React.FC<StationFinderMapProps> = ({
   weights: _weights,
@@ -109,9 +158,9 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'MODERATE' | 'LIKELY_FULL' | 'FAST_ONLY'>('ALL');
   const [activeCity, setActiveCity] = useState<string>('All India');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [fitBoundsState, setFitBoundsState] = useState<L.LatLngBoundsExpression | null>(null);
+  const [fitBoundsState, setFitBoundsState] = useState<L.LatLngBoundsExpression | null>(() => getBoundsForStations(EV_STATIONS_DATA));
   const [camera, setCamera] = useState<{ center: [number, number]; zoom: number }>({
-    center: [21.5, 78.9],
+    center: [19.0, 78.5],
     zoom: 5,
   });
   const [isSyncingLive, setIsSyncingLive] = useState<boolean>(false);
@@ -224,24 +273,18 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
 
   const handleCityJump = (city: typeof CITY_PRESETS[0]) => {
     setActiveCity(city.label);
-    setFitBoundsState(null);
-    setCamera({ center: city.center, zoom: city.zoom });
+    if (city.isAll) {
+      handleFitAllStations();
+    } else {
+      setFitBoundsState(null);
+      setCamera({ center: city.center, zoom: city.zoom });
+    }
   };
 
   const handleFitAllStations = () => {
-    if (filteredStations.length === 0) return;
-    const lats = filteredStations.map((s) => s.lat);
-    const lons = filteredStations.map((s) => s.lon);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLon = Math.min(...lons);
-    const maxLon = Math.max(...lons);
-
+    const targetStations = filteredStations.length > 0 ? filteredStations : allStations;
     setActiveCity('All India');
-    setFitBoundsState([
-      [minLat - 0.5, minLon - 0.5],
-      [maxLat + 0.5, maxLon + 0.5],
-    ]);
+    setFitBoundsState(getBoundsForStations(targetStations));
   };
 
   return (
@@ -249,22 +292,22 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
       ref={containerRef}
       className={`bg-[#0c101c] border border-slate-800/80 transition-all duration-300 ${
         isFullscreen 
-          ? 'fixed inset-0 z-50 p-3 sm:p-6 bg-slate-950 overflow-y-auto flex flex-col justify-between' 
-          : 'rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-2xl space-y-4'
+          ? 'fixed inset-0 z-50 p-2 sm:p-4 lg:p-6 bg-slate-950 overflow-y-auto flex flex-col justify-between' 
+          : 'rounded-2xl sm:rounded-3xl p-3 sm:p-5 lg:p-6 shadow-2xl space-y-3 sm:space-y-4'
       }`}
     >
       
       {/* Top Search, City Bar & Filter Controls */}
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-2.5 sm:space-y-3.5">
         
         {/* Title & Stats Headline */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-3">
           <div>
             <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-400 mb-0.5">
               <Compass className="w-3.5 h-3.5 text-cyan-400 animate-spin-slow" />
               <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-xs">National EV Infrastructure Map</span>
             </div>
-            <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            <h2 className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight flex items-center gap-2">
               <span>Find EV Charging Stations</span>
             </h2>
             <p className="text-[11px] sm:text-xs text-slate-400">
@@ -274,7 +317,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
 
           {/* Quick Counter & Live Sync */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3 py-1 sm:py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] sm:text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+            <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[10px] sm:text-xs font-bold text-cyan-300 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
               <span>{filteredStations.length} of {allStations.length} Stations</span>
             </span>
@@ -296,7 +339,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by city (Bangalore, Chennai, Mumbai, Delhi), station, or operator (Tata, Zeon, Jio-bp)..."
-            className="w-full pl-10 pr-12 py-2.5 sm:py-3 bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-cyan-400 focus:outline-none rounded-xl sm:rounded-2xl text-xs sm:text-sm text-white placeholder:text-slate-500 shadow-inner font-sans transition"
+            className="w-full pl-10 pr-12 py-2 sm:py-2.5 bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-cyan-400 focus:outline-none rounded-xl sm:rounded-2xl text-xs sm:text-sm text-white placeholder:text-slate-500 shadow-inner font-sans transition"
           />
           {searchQuery && (
             <button
@@ -309,7 +352,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
         </div>
 
         {/* City Quick Jumps */}
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none snap-x touch-pan-x">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none snap-x touch-pan-x">
           <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 whitespace-nowrap mr-1 flex-shrink-0">
             Jump to Metro:
           </span>
@@ -317,7 +360,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
             <button
               key={city.label}
               onClick={() => handleCityJump(city)}
-              className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-medium whitespace-nowrap transition cursor-pointer flex-shrink-0 snap-start ${
+              className={`px-2.5 sm:px-3 py-1 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap transition cursor-pointer flex-shrink-0 snap-start ${
                 activeCity === city.label
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow-md'
                   : 'bg-slate-950 hover:bg-slate-900 text-slate-300 border border-slate-800/90'
@@ -337,7 +380,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
 
           <button
             onClick={() => setStatusFilter('ALL')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold transition cursor-pointer ${
               statusFilter === 'ALL'
                 ? 'bg-slate-200 text-slate-950 font-bold'
                 : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
@@ -348,7 +391,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
 
           <button
             onClick={() => setStatusFilter('AVAILABLE')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
               statusFilter === 'AVAILABLE'
                 ? 'bg-emerald-500 text-slate-950 font-bold'
                 : 'bg-emerald-950/30 text-emerald-400 hover:bg-emerald-950/60 border border-emerald-800/40'
@@ -360,7 +403,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
 
           <button
             onClick={() => setStatusFilter('MODERATE')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
               statusFilter === 'MODERATE'
                 ? 'bg-amber-500 text-slate-950 font-bold'
                 : 'bg-amber-950/30 text-amber-400 hover:bg-amber-950/60 border border-amber-800/40'
@@ -372,7 +415,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
 
           <button
             onClick={() => setStatusFilter('LIKELY_FULL')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
               statusFilter === 'LIKELY_FULL'
                 ? 'bg-rose-500 text-slate-950 font-bold'
                 : 'bg-rose-950/30 text-rose-400 hover:bg-rose-950/60 border border-rose-800/40'
@@ -384,7 +427,7 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
 
           <button
             onClick={() => setStatusFilter('FAST_ONLY')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
               statusFilter === 'FAST_ONLY'
                 ? 'bg-cyan-500 text-slate-950 font-bold'
                 : 'bg-slate-950 text-cyan-400 hover:bg-slate-900 border border-cyan-800/40'
@@ -399,7 +442,9 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
 
       {/* Hero Full-Bleed Map Viewport */}
       <div className={`relative w-full rounded-xl sm:rounded-2xl overflow-hidden border border-slate-800 shadow-2xl z-0 ${
-        isFullscreen ? 'flex-1 min-h-[500px]' : 'h-[58vh] min-h-[420px] sm:h-[68vh] lg:h-[720px]'
+        isFullscreen 
+          ? 'flex-1 min-h-[500px]' 
+          : 'h-[58vh] min-h-[420px] sm:h-[64vh] sm:min-h-[520px] lg:h-[calc(100vh-290px)] lg:min-h-[600px] lg:max-h-[800px]'
       }`}>
         <MapContainer
           center={camera.center}
@@ -556,19 +601,19 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
       </div>
 
       {/* Map Legend Footer */}
-      <div className="pt-2 border-t border-slate-900 flex flex-wrap items-center justify-between gap-3 text-[11px] sm:text-xs text-slate-400">
+      <div className="pt-2 border-t border-slate-900 flex flex-wrap items-center justify-between gap-3 text-[10px] sm:text-xs text-slate-400">
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-semibold text-slate-300">Status:</span>
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 inline-block"></span>
             <span>&lt;40% Available</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-amber-500 inline-block"></span>
             <span>40–70% Moderate</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-rose-500 inline-block"></span>
             <span>&gt;70% Likely Full</span>
           </span>
         </div>
