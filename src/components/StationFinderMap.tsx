@@ -128,6 +128,7 @@ const CITY_PRESETS = [
   { label: 'Coimbatore', center: [11.0168, 76.9558] as [number, number], zoom: 12 },
 ];
 
+// Computes the bounding box coordinates to encompass a given list of EV stations for auto-fitting the map view
 function getBoundsForStations(stations: EVStation[]): L.LatLngBoundsExpression {
   if (!stations || stations.length === 0) {
     return [
@@ -345,20 +346,15 @@ export const StationFinderMap: React.FC<StationFinderMapProps> = ({
             </p>
           </div>
 
-          {/* Quick Counter & Live Sync */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[10px] sm:text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-              <span>{filteredStations.length} of {allStations.length} Stations</span>
-            </span>
-
-            {isSyncingLive && (
+          {/* Live Sync */}
+          {isSyncingLive && (
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-1 rounded-xl bg-blue-950/40 border border-blue-800/40 text-[10px] sm:text-[11px] font-mono text-cyan-400 flex items-center gap-1">
                 <RefreshCw className="w-2.5 h-2.5 animate-spin" />
                 <span>Syncing OSM...</span>
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Search Input Bar */}
