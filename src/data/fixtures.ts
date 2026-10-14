@@ -7,7 +7,7 @@ export const DEFAULT_WEIGHTS: SignalWeightConfig = {
   corridor: 0.15,
 };
 
-export const SUPPRESSION_THRESHOLD_ECS = 55.0;
+export const SUPPRESSION_THRESHOLD_ECS = 50.0; // Spec: README §3 Safety Guardrail — suppress when Confidence < 50%
 
 export const HUB_FIXTURES: HubFixture[] = [
   {

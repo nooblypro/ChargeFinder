@@ -227,7 +227,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                       <div className="mt-3 p-3 rounded-xl bg-amber-950/40 border border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-200">
                         <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                         <p>
-                          Score is hidden because data coverage ({ecsScore.toFixed(0)}%) is below the required 55% threshold. Verify station manually.
+                          Score is hidden because data coverage ({ecsScore.toFixed(0)}%) is below the required 50% threshold. Verify station manually.
                         </p>
                       </div>
                     )}
